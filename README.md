@@ -84,3 +84,8 @@ python -m claudebot capture --output debug\claude_window.png
 - Si el aspecto del boton cambia, sustituye la plantilla en `assets/`.
 - Si quieres probar sin enviar teclas, usa `--dry-run`.
 - Puedes ajustar la espera de quietud del raton con `--mouse-idle-seconds`; por defecto usa `5`.
+
+## Arranque Rapido
+
+- Windows: abre `START_WINDOWS.md` o haz doble clic en `run_claudebot.bat`.
+- macOS: abre `START_MAC.md` y ejecuta `./run_claudebot_mac.command`.
