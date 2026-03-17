@@ -17,7 +17,7 @@ if (-not (Test-Path .venv\Scripts\python.exe)) {
 }
 
 & .\.venv\Scripts\python.exe -m pip install -r requirements.txt | Out-Null
-$env:PYTHONPATH = Join-Path $ProjectRoot 'src'
+& .\.venv\Scripts\python.exe -m pip install -e . | Out-Null
 
 $args = @('-m', 'claudebot', 'run', '--window-title', $WindowTitle, '--template', $Template, '--threshold', "$Threshold", '--interval', "$Interval", '--cooldown', "$Cooldown")
 if ($Region) {

@@ -20,6 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument('--cooldown', type=float, default=4.0, help='Segundos de espera tras cada disparo.')
     run_parser.add_argument('--region', help='Region relativa a la ventana con formato x,y,w,h.')
     run_parser.add_argument('--hotkey', default='ctrl,enter', help='Teclas a enviar separadas por comas.')
+    run_parser.add_argument('--evidence-dir', default='evidence', help='Carpeta donde guardar capturas before/after al actuar.')
     run_parser.add_argument('--color', action='store_true', help='Usa match en color. Por defecto usa escala de grises.')
     run_parser.add_argument('--dry-run', action='store_true', help='Detecta el CTA pero no envia teclas.')
 
@@ -52,6 +53,7 @@ def main() -> int:
         grayscale=not args.color,
         region=parse_region(args.region),
         hotkey=parse_hotkey(args.hotkey),
+        evidence_dir=Path(args.evidence_dir),
         dry_run=args.dry_run,
     )
     run_monitor(config)

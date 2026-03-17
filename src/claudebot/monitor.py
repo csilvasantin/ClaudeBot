@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import platform
+import subprocess
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -26,7 +28,25 @@ class MonitorConfig:
     grayscale: bool
     region: Optional[tuple[int, int, int, int]]
     hotkey: tuple[str, ...]
+    evidence_dir: Path
     dry_run: bool
+
+
+@dataclass
+class MacOSWindow:
+    app_name: str
+    title: str
+    left: int
+    top: int
+    width: int
+    height: int
+    isMinimized: bool = False
+
+    def restore(self) -> None:
+        return
+
+    def activate(self) -> None:
+        activate_macos_app(self.app_name)
 
 
 def log(message: str) -> None:
@@ -37,7 +57,60 @@ def log(message: str) -> None:
         pass
 
 
+def run_osascript(script: str) -> str:
+    result = subprocess.run(
+        ['osascript', '-e', script],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def activate_macos_app(app_name: str) -> None:
+    escaped = app_name.replace('"', '\"')
+    run_osascript(f'tell application "{escaped}" to activate')
+
+
+def find_window_macos(title_hint: str) -> MacOSWindow:
+    escaped_hint = title_hint.replace('"', '\"')
+    script = f'''
+        tell application "System Events"
+            set matchingProcesses to every application process whose background only is false and name contains "{escaped_hint}"
+            if (count of matchingProcesses) is 0 then
+                error "No encuentro una app con el nombre {escaped_hint}"
+            end if
+            set targetProcess to item 1 of matchingProcesses
+            set targetName to name of targetProcess
+            if (count of windows of targetProcess) is 0 then
+                error "La app {escaped_hint} no tiene ventanas visibles"
+            end if
+            set targetWindow to item 1 of windows of targetProcess
+            set targetTitle to name of targetWindow
+            set {{xPos, yPos}} to position of targetWindow
+            set {{winWidth, winHeight}} to size of targetWindow
+            return targetName & "||" & targetTitle & "||" & xPos & "||" & yPos & "||" & winWidth & "||" & winHeight
+        end tell
+    '''
+    raw = run_osascript(script)
+    parts = raw.split('||')
+    if len(parts) != 6:
+        raise RuntimeError(f'Respuesta inesperada de macOS al buscar la ventana: {raw}')
+    app_name, window_title, left, top, width, height = parts
+    return MacOSWindow(
+        app_name=app_name,
+        title=window_title,
+        left=int(left),
+        top=int(top),
+        width=int(width),
+        height=int(height),
+    )
+
+
 def find_window(title_hint: str):
+    if platform.system() == 'Darwin':
+        return find_window_macos(title_hint)
+
     matches = [window for window in pyautogui.getWindowsWithTitle(title_hint) if window.title]
     if not matches:
         raise RuntimeError(f"No encuentro una ventana con el titulo que contenga '{title_hint}'.")
@@ -64,6 +137,11 @@ def screenshot_region(region: tuple[int, int, int, int]) -> np.ndarray:
     shot = pyautogui.screenshot(region=region)
     frame = np.array(shot)
     return cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+
+def save_frame(frame: np.ndarray, output: Path) -> None:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(str(output), frame)
 
 
 def load_template(path: Path, grayscale: bool) -> np.ndarray:
@@ -95,9 +173,11 @@ def detection_is_actionable(
 
 
 def focus_window(window) -> None:
-    if window.isMinimized:
-        window.restore()
-        time.sleep(0.2)
+    if getattr(window, 'isMinimized', False):
+        restore = getattr(window, 'restore', None)
+        if callable(restore):
+            restore()
+            time.sleep(0.2)
     window.activate()
     time.sleep(0.15)
 
@@ -127,16 +207,25 @@ def save_window_capture(window_title: str, output: Path, region: Optional[tuple[
     window = find_window(window_title)
     focus_window(window)
     capture = screenshot_region(normalize_region(window, region))
-    output.parent.mkdir(parents=True, exist_ok=True)
-    cv2.imwrite(str(output), capture)
+    save_frame(capture, output)
     log(f'Captura guardada en {output}')
+
+
+def capture_evidence(config: MonitorConfig, frame: np.ndarray, suffix: str) -> Path:
+    stamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+    output = config.evidence_dir / f'claudebot_{stamp}_{suffix}.png'
+    save_frame(frame, output)
+    return output
 
 
 def run_monitor(config: MonitorConfig) -> None:
     template = load_template(config.template_path, grayscale=config.grayscale)
     last_triggered = 0.0
     action_label = '+'.join(config.hotkey)
-    log(f"Monitorizando la ventana '{config.window_title}' usando {config.template_path} y accion {action_label}")
+    platform_name = platform.system()
+    log(
+        f"Monitorizando la ventana '{config.window_title}' en {platform_name} usando {config.template_path} y accion {action_label}"
+    )
 
     while True:
         try:
@@ -161,9 +250,16 @@ def run_monitor(config: MonitorConfig) -> None:
                     )
                     if confirmed:
                         log(f'Coincidencia detectada ({confirm_score:.3f}) en x={confirm_location[0]}, y={confirm_location[1]}')
+                        before_path = capture_evidence(config, confirm_capture, 'before')
+                        log(f'Captura de evidencia guardada antes de actuar: {before_path}')
                         if not config.dry_run:
                             trigger_hotkey(window, config.hotkey)
                             log(f"Hotkey enviada: {'+'.join(config.hotkey)}")
+                            time.sleep(0.5)
+                            after_window = find_window(config.window_title)
+                            after_capture = screenshot_region(normalize_region(after_window, config.region))
+                            after_path = capture_evidence(config, after_capture, 'after')
+                            log(f'Captura de evidencia guardada despues de actuar: {after_path}')
                         else:
                             log('Dry run activo: no se envio ninguna tecla')
                         last_triggered = now
