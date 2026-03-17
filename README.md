@@ -8,6 +8,7 @@ ClaudeBot vigila la ventana de Claude Desktop y pulsa `Ctrl+Enter` cuando aparec
 - Captura la ventana completa o una region concreta.
 - Detecta el CTA visual con OpenCV.
 - Enfoca Claude y envia la hotkey configurada.
+- Si detecta movimiento reciente del raton, espera 5 segundos de quietud antes de cambiar de ventana.
 - Guarda capturas `before` y `after` en `evidence/` cada vez que actua.
 
 ## Instalacion Windows
@@ -40,7 +41,7 @@ python -m claudebot run
 O con el lanzador:
 
 ```powershell
-.un_claudebot.ps1
+.\run_claudebot.ps1
 ```
 
 ## Uso macOS
@@ -62,6 +63,7 @@ Si en tu Claude para Mac el atajo correcto es `Command+Enter`, usa:
 python -m claudebot run --interval 3 --threshold 0.9
 python -m claudebot run --region 900,1500,800,500
 python -m claudebot run --template assets\claude_ctrl_enter_template.png
+python -m claudebot run --mouse-idle-seconds 8
 python -m claudebot capture --output debug\claude_window.png
 ```
 
@@ -81,3 +83,4 @@ python -m claudebot capture --output debug\claude_window.png
 - En macOS la deteccion de ventana usa AppleScript sobre `System Events`.
 - Si el aspecto del boton cambia, sustituye la plantilla en `assets/`.
 - Si quieres probar sin enviar teclas, usa `--dry-run`.
+- Puedes ajustar la espera de quietud del raton con `--mouse-idle-seconds`; por defecto usa `5`.

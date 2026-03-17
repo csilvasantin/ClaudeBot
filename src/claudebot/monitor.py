@@ -29,6 +29,7 @@ class MonitorConfig:
     region: Optional[tuple[int, int, int, int]]
     hotkey: tuple[str, ...]
     evidence_dir: Path
+    mouse_idle_seconds: float
     dry_run: bool
 
 
@@ -172,6 +173,39 @@ def detection_is_actionable(
     return score >= threshold and is_low_enough, score, location, size
 
 
+def get_mouse_position() -> tuple[int, int]:
+    point = pyautogui.position()
+    return int(point.x), int(point.y)
+
+
+def wait_for_mouse_idle(idle_seconds: float, poll_interval: float = 0.2) -> None:
+    if idle_seconds <= 0:
+        return
+
+    last_position = get_mouse_position()
+    last_moved_at = time.time()
+    waiting_logged = False
+
+    while True:
+        time.sleep(poll_interval)
+        current_position = get_mouse_position()
+        now = time.time()
+        if current_position != last_position:
+            last_position = current_position
+            last_moved_at = now
+            waiting_logged = False
+            continue
+
+        idle_for = now - last_moved_at
+        if idle_for >= idle_seconds:
+            return
+
+        if not waiting_logged:
+            remaining = idle_seconds - idle_for
+            log(f'Ratón en movimiento reciente; espero {remaining:.1f}s de quietud antes de cambiar la ventana')
+            waiting_logged = True
+
+
 def focus_window(window) -> None:
     if getattr(window, 'isMinimized', False):
         restore = getattr(window, 'restore', None)
@@ -253,6 +287,21 @@ def run_monitor(config: MonitorConfig) -> None:
                         before_path = capture_evidence(config, confirm_capture, 'before')
                         log(f'Captura de evidencia guardada antes de actuar: {before_path}')
                         if not config.dry_run:
+                            wait_for_mouse_idle(config.mouse_idle_seconds)
+                            window = find_window(config.window_title)
+                            ready_capture = screenshot_region(normalize_region(window, config.region))
+                            still_confirmed, ready_score, ready_location, _ = detection_is_actionable(
+                                ready_capture,
+                                template,
+                                grayscale=config.grayscale,
+                                threshold=config.threshold,
+                            )
+                            if not still_confirmed:
+                                log(
+                                    f'Coincidencia cancelada tras esperar al ratón ({ready_score:.3f}) en x={ready_location[0]}, y={ready_location[1]}'
+                                )
+                                time.sleep(config.interval)
+                                continue
                             trigger_hotkey(window, config.hotkey)
                             log(f"Hotkey enviada: {'+'.join(config.hotkey)}")
                             time.sleep(0.5)
