@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ClaudeBot</title>
+  <meta name="description" content="ClaudeBot detecta cuando Claude pide confirmacion para continuar y envía la hotkey adecuada automáticamente.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="orb orb-a"></div>
+  <div class="orb orb-b"></div>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">ClaudeBot</p>
+      <h1>Deja que Claude siga trabajando sin vigilar el boton.</h1>
+      <p class="lede">ClaudeBot observa la ventana de Claude Desktop, detecta la confirmacion visual para continuar, espera a que no estes moviendo el raton y lanza la hotkey correcta con evidencia before/after.</p>
+      <div class="actions">
+        <a class="button primary" href="https://github.com/csilvasantin/ClaudeBot">Ver en GitHub</a>
+        <a class="button secondary" href="https://github.com/csilvasantin/ClaudeBot/blob/main/START_WINDOWS.md">Arranque rapido</a>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card accent">
+        <h2>Que hace</h2>
+        <p>Detecta el CTA de continuacion con OpenCV, enfoca Claude cuando toca y evita molestarte si estas usando activamente el raton.</p>
+      </article>
+      <article class="card">
+        <h2>Seguridad de uso</h2>
+        <p>Antes de actuar, ClaudeBot espera 5 segundos de quietud del raton y vuelve a comprobar que la confirmacion sigue visible.</p>
+      </article>
+      <article class="card">
+        <h2>Evidencia visual</h2>
+        <p>Guarda una captura antes y otra despues de cada accion para que puedas verificar exactamente lo que hizo.</p>
+      </article>
+    </section>
+
+    <section class="steps">
+      <div class="section-head">
+        <p class="eyebrow">Inicio rapido</p>
+        <h2>Listo en un minuto</h2>
+      </div>
+      <div class="step-list">
+        <article class="step">
+          <span>01</span>
+          <h3>Windows</h3>
+          <p>Clona el repo, abre Claude y haz doble clic en <code>run_claudebot.bat</code>.</p>
+        </article>
+        <article class="step">
+          <span>02</span>
+          <h3>macOS</h3>
+          <p>Concede permisos de Accessibility y Screen Recording, luego ejecuta <code>./run_claudebot_mac.command</code>.</p>
+        </article>
+        <article class="step">
+          <span>03</span>
+          <h3>Personaliza</h3>
+          <p>Ajusta <code>--mouse-idle-seconds</code>, la region de captura o la hotkey si tu entorno lo necesita.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="footer-card">
+      <h2>Repositorio</h2>
+      <p>Proyecto open-source en GitHub con soporte para Windows y macOS.</p>
+      <a class="button primary" href="https://github.com/csilvasantin/ClaudeBot">github.com/csilvasantin/ClaudeBot</a>
+    </section>
+  </main>
+</body>
+</html>
