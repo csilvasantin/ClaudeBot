@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ClaudeBot"
+version = "0.1.0"
+description = "Visual monitor for Claude Desktop that sends Ctrl+Enter when continuation confirmation appears."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "opencv-python",
+  "numpy",
+  "pyautogui",
+  "Pillow",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
