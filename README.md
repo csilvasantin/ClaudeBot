@@ -38,10 +38,16 @@ cd 'H:\Mi unidad\Codex\ClaudeBot'
 python -m claudebot run
 ```
 
-O con el lanzador:
+O con el lanzador en primer plano:
 
 ```powershell
 .\run_claudebot.ps1
+```
+
+O en segundo plano:
+
+```powershell
+.\run_claudebot.ps1 -Background
 ```
 
 ## Uso macOS
@@ -87,5 +93,5 @@ python -m claudebot capture --output debug\claude_window.png
 
 ## Arranque Rapido
 
-- Windows: abre `START_WINDOWS.md` o haz doble clic en `run_claudebot.bat`.
+- Windows: abre `START_WINDOWS.md` o haz doble clic en `run_claudebot.bat` para arrancarlo en segundo plano.
 - macOS: abre `START_MAC.md` y ejecuta `./run_claudebot_mac.command`.
