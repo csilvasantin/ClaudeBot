@@ -50,6 +50,14 @@ O en segundo plano:
 .\run_claudebot.ps1 -Background
 ```
 
+O con watcher automatico estilo CodexBot:
+
+```powershell
+.\Launch.ps1
+```
+
+Ese watcher arranca ClaudeBot cuando detecta la ventana de Claude y lo detiene cuando Claude se cierra.
+
 ## Uso macOS
 
 ```bash
@@ -80,6 +88,8 @@ python -m claudebot capture --output debug\claude_window.png
 - `assets/claude_ctrl_enter_template.png`: plantilla por defecto del CTA.
 - `evidence/`: capturas before/after que ClaudeBot guarda cada vez que actua.
 - `run_claudebot.ps1`: lanzador rapido para Windows.
+- `Launch.ps1`: arranca el watcher de Windows.
+- `ClaudeBot-Watcher.ps1`: enciende y apaga ClaudeBot segun el estado de Claude.
 - `run_claudebot_mac.command`: lanzador rapido para macOS.
 
 ## Notas
@@ -93,5 +103,5 @@ python -m claudebot capture --output debug\claude_window.png
 
 ## Arranque Rapido
 
-- Windows: abre `START_WINDOWS.md` o haz doble clic en `run_claudebot.bat` para arrancarlo en segundo plano.
+- Windows: abre `START_WINDOWS.md` o haz doble clic en `run_claudebot.bat` para arrancar el watcher que sigue el ciclo de vida de Claude.
 - macOS: abre `START_MAC.md` y ejecuta `./run_claudebot_mac.command`.

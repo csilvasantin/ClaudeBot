@@ -58,6 +58,16 @@ def log(message: str) -> None:
         pass
 
 
+def log_state(label: str, message: str) -> None:
+    log(f'{label:<10} {message}')
+
+
+def log_intervention(message: str) -> None:
+    log('----------------------------------------')
+    log_state('CLAUDEBOT', message)
+    log('----------------------------------------')
+
+
 def run_osascript(script: str) -> str:
     result = subprocess.run(
         ['osascript', '-e', script],
@@ -257,8 +267,9 @@ def run_monitor(config: MonitorConfig) -> None:
     last_triggered = 0.0
     action_label = '+'.join(config.hotkey)
     platform_name = platform.system()
-    log(
-        f"Monitorizando la ventana '{config.window_title}' en {platform_name} usando {config.template_path} y accion {action_label}"
+    log_state(
+        'START',
+        f"Monitorizando '{config.window_title}' en {platform_name} con plantilla {config.template_path} y accion {action_label}"
     )
 
     while True:
@@ -283,9 +294,11 @@ def run_monitor(config: MonitorConfig) -> None:
                         threshold=config.threshold,
                     )
                     if confirmed:
-                        log(f'Coincidencia detectada ({confirm_score:.3f}) en x={confirm_location[0]}, y={confirm_location[1]}')
+                        log_intervention(
+                            f'Intervencion detectada ({confirm_score:.3f}) en x={confirm_location[0]}, y={confirm_location[1]}'
+                        )
                         before_path = capture_evidence(config, confirm_capture, 'before')
-                        log(f'Captura de evidencia guardada antes de actuar: {before_path}')
+                        log_state('EVIDENCE', f'Captura guardada antes de actuar: {before_path}')
                         if not config.dry_run:
                             wait_for_mouse_idle(config.mouse_idle_seconds)
                             window = find_window(config.window_title)
@@ -297,29 +310,33 @@ def run_monitor(config: MonitorConfig) -> None:
                                 threshold=config.threshold,
                             )
                             if not still_confirmed:
-                                log(
+                                log_state(
+                                    'CANCEL',
                                     f'Coincidencia cancelada tras esperar al ratón ({ready_score:.3f}) en x={ready_location[0]}, y={ready_location[1]}'
                                 )
                                 time.sleep(config.interval)
                                 continue
                             trigger_hotkey(window, config.hotkey)
-                            log(f"Hotkey enviada: {'+'.join(config.hotkey)}")
+                            log_state('ACTION', f"Hotkey enviada: {'+'.join(config.hotkey)}")
                             time.sleep(0.5)
                             after_window = find_window(config.window_title)
                             after_capture = screenshot_region(normalize_region(after_window, config.region))
                             after_path = capture_evidence(config, after_capture, 'after')
-                            log(f'Captura de evidencia guardada despues de actuar: {after_path}')
+                            log_state('EVIDENCE', f'Captura guardada despues de actuar: {after_path}')
                         else:
-                            log('Dry run activo: no se envio ninguna tecla')
+                            log_state('DRY-RUN', 'No se envio ninguna tecla')
                         last_triggered = now
                     else:
-                        log(f'Coincidencia descartada ({score:.3f}) en x={location[0]}, y={location[1]}')
+                        log_state('DISCARD', f'Coincidencia descartada ({score:.3f}) en x={location[0]}, y={location[1]}')
+                else:
+                    remaining = config.cooldown - (now - last_triggered)
+                    log_state('COOLDOWN', f'Coincidencia detectada pero en enfriamiento ({remaining:.1f}s)')
             else:
-                log('No he encontrado una solicitud de continuacion, sigo vigilando')
+                log_state('WATCHING', 'No he encontrado una solicitud de continuacion, sigo vigilando')
             time.sleep(config.interval)
         except KeyboardInterrupt:
-            log('Bot detenido por el usuario')
+            log_state('STOP', 'Bot detenido por el usuario')
             return
         except Exception as exc:
-            log(f'Esperando ventana o plantilla valida: {exc}')
+            log_state('WAIT', f'Esperando ventana o plantilla valida: {exc}')
             time.sleep(max(config.interval, 1.0))
