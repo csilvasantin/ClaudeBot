@@ -1,5 +1,11 @@
 # ClaudeBot
 
+## 1 2 3 basico
+
+1. leer `onboarding` antes de tocar automatizaciones;
+2. dejar ClaudeBot operativo y comprobado;
+3. cerrar con HTML y URL publica verificable para revisar el resultado.
+
 ClaudeBot vigila la ventana de Claude Desktop y pulsa `Ctrl+Enter` cuando aparece el CTA visual que indica que Claude necesita confirmacion para continuar. Funciona en Windows y ahora incluye una ruta especifica para macOS.
 
 ## Que hace
@@ -105,3 +111,11 @@ python -m claudebot capture --output debug\claude_window.png
 
 - Windows: abre `START_WINDOWS.md` o haz doble clic en `run_claudebot.bat` para arrancar el watcher que sigue el ciclo de vida de Claude.
 - macOS: abre `START_MAC.md` y ejecuta `./run_claudebot_mac.command`.
+
+## Regla de cierre
+
+Cuando una sesion cambie comportamiento, instalacion o estado operativo:
+
+1. dejar una salida final en HTML;
+2. entregar una URL publica para comprobarla;
+3. no tratar `Nomeacuerd0` como seguridad real si aparece en una pagina publica.
