@@ -29,7 +29,7 @@ function Get-BotProcess {
 
 function Start-Bot {
     if (Get-BotProcess) { return }
-    Start-Process conhost.exe -ArgumentList "`"$pwsh`" -NoProfile -ExecutionPolicy Bypass -File `"$botLauncher`" -Background"
+    Start-Process conhost.exe -ArgumentList "`"$pwsh`" -NoProfile -ExecutionPolicy Bypass -File `"$botLauncher`" -ExitWhenWindowMissingAfter 2"
     Write-Host "[Watcher] Claude detected -> ClaudeBot launched" -ForegroundColor Green
 }
 

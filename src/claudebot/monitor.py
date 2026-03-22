@@ -16,6 +16,11 @@ import pyautogui
 pyautogui.FAILSAFE = True
 LOWER_ZONE_RATIO = 0.6
 CONFIRMATION_DELAY = 0.35
+ANSI_RESET = "\033[0m"
+ANSI_CLAUDE = "\033[38;2;217;119;87m"
+ANSI_SOFT = "\033[38;2;245;232;215m"
+ANSI_MUTED = "\033[38;2;143;148;156m"
+ANSI_DIVIDER = "\033[38;2;120;72;52m"
 
 
 @dataclass(frozen=True)
@@ -31,6 +36,7 @@ class MonitorConfig:
     evidence_dir: Path
     mouse_idle_seconds: float
     dry_run: bool
+    exit_when_window_missing_after: int
 
 
 @dataclass
@@ -53,19 +59,23 @@ class MacOSWindow:
 def log(message: str) -> None:
     stamp = datetime.now().strftime('%H:%M:%S')
     try:
-        print(f'[{stamp}] {message}', flush=True)
+        print(f'{ANSI_MUTED}[{stamp}]{ANSI_RESET} {message}', flush=True)
     except OSError:
         pass
 
 
-def log_state(label: str, message: str) -> None:
-    log(f'{label:<10} {message}')
+def colorize(text: str, color: str) -> str:
+    return f"{color}{text}{ANSI_RESET}"
+
+
+def log_state(label: str, message: str, color: str = ANSI_SOFT) -> None:
+    log(f'{colorize(f"{label:<10}", color)} {message}')
 
 
 def log_intervention(message: str) -> None:
-    log('----------------------------------------')
-    log_state('CLAUDEBOT', message)
-    log('----------------------------------------')
+    log(colorize('----------------------------------------', ANSI_DIVIDER))
+    log_state('CLAUDEBOT', message, ANSI_CLAUDE)
+    log(colorize('----------------------------------------', ANSI_DIVIDER))
 
 
 def run_osascript(script: str) -> str:
@@ -265,16 +275,21 @@ def capture_evidence(config: MonitorConfig, frame: np.ndarray, suffix: str) -> P
 def run_monitor(config: MonitorConfig) -> None:
     template = load_template(config.template_path, grayscale=config.grayscale)
     last_triggered = 0.0
+    missing_window_count = 0
+    check_count = 0
     action_label = '+'.join(config.hotkey)
     platform_name = platform.system()
     log_state(
         'START',
-        f"Monitorizando '{config.window_title}' en {platform_name} con plantilla {config.template_path} y accion {action_label}"
+        f"Monitorizando '{config.window_title}' en {platform_name} con plantilla {config.template_path} y accion {action_label}",
+        ANSI_CLAUDE,
     )
 
     while True:
         try:
+            check_count += 1
             window = find_window(config.window_title)
+            missing_window_count = 0
             capture = screenshot_region(normalize_region(window, config.region))
             actionable, score, location, _ = detection_is_actionable(
                 capture,
@@ -298,7 +313,7 @@ def run_monitor(config: MonitorConfig) -> None:
                             f'Intervencion detectada ({confirm_score:.3f}) en x={confirm_location[0]}, y={confirm_location[1]}'
                         )
                         before_path = capture_evidence(config, confirm_capture, 'before')
-                        log_state('EVIDENCE', f'Captura guardada antes de actuar: {before_path}')
+                        log_state('EVIDENCE', f'Captura guardada antes de actuar: {before_path}', ANSI_MUTED)
                         if not config.dry_run:
                             wait_for_mouse_idle(config.mouse_idle_seconds)
                             window = find_window(config.window_title)
@@ -312,31 +327,36 @@ def run_monitor(config: MonitorConfig) -> None:
                             if not still_confirmed:
                                 log_state(
                                     'CANCEL',
-                                    f'Coincidencia cancelada tras esperar al ratón ({ready_score:.3f}) en x={ready_location[0]}, y={ready_location[1]}'
+                                    f'Coincidencia cancelada tras esperar al ratón ({ready_score:.3f}) en x={ready_location[0]}, y={ready_location[1]}',
+                                    ANSI_MUTED,
                                 )
                                 time.sleep(config.interval)
                                 continue
                             trigger_hotkey(window, config.hotkey)
-                            log_state('ACTION', f"Hotkey enviada: {'+'.join(config.hotkey)}")
+                            log_state('ACTION', f"Hotkey enviada: {'+'.join(config.hotkey)}", ANSI_CLAUDE)
                             time.sleep(0.5)
                             after_window = find_window(config.window_title)
                             after_capture = screenshot_region(normalize_region(after_window, config.region))
                             after_path = capture_evidence(config, after_capture, 'after')
-                            log_state('EVIDENCE', f'Captura guardada despues de actuar: {after_path}')
+                            log_state('EVIDENCE', f'Captura guardada despues de actuar: {after_path}', ANSI_MUTED)
                         else:
-                            log_state('DRY-RUN', 'No se envio ninguna tecla')
+                            log_state('DRY-RUN', 'No se envio ninguna tecla', ANSI_MUTED)
                         last_triggered = now
                     else:
-                        log_state('DISCARD', f'Coincidencia descartada ({score:.3f}) en x={location[0]}, y={location[1]}')
+                        log_state('DISCARD', f'Coincidencia descartada ({score:.3f}) en x={location[0]}, y={location[1]}', ANSI_MUTED)
                 else:
                     remaining = config.cooldown - (now - last_triggered)
-                    log_state('COOLDOWN', f'Coincidencia detectada pero en enfriamiento ({remaining:.1f}s)')
+                    log_state('COOLDOWN', f'Coincidencia detectada pero en enfriamiento ({remaining:.1f}s)', ANSI_MUTED)
             else:
-                log_state('WATCHING', 'No he encontrado una solicitud de continuacion, sigo vigilando')
+                log_state('CHECK', f'Chequeo #{check_count}: sin solicitud, sigo vigilando', ANSI_CLAUDE)
             time.sleep(config.interval)
         except KeyboardInterrupt:
-            log_state('STOP', 'Bot detenido por el usuario')
+            log_state('STOP', 'Bot detenido por el usuario', ANSI_MUTED)
             return
         except Exception as exc:
-            log_state('WAIT', f'Esperando ventana o plantilla valida: {exc}')
+            missing_window_count += 1
+            log_state('WAIT', f'Chequeo #{check_count}: esperando ventana o plantilla valida: {exc}', ANSI_MUTED)
+            if config.exit_when_window_missing_after > 0 and missing_window_count >= config.exit_when_window_missing_after:
+                log_state('STOP', f"Claude no aparece tras {missing_window_count} comprobaciones; cerrando bot", ANSI_MUTED)
+                return
             time.sleep(max(config.interval, 1.0))

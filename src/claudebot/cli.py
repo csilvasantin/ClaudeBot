@@ -24,6 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument('--mouse-idle-seconds', type=float, default=5.0, help='Segundos de quietud del raton antes de enfocar Claude.')
     run_parser.add_argument('--color', action='store_true', help='Usa match en color. Por defecto usa escala de grises.')
     run_parser.add_argument('--dry-run', action='store_true', help='Detecta el CTA pero no envia teclas.')
+    run_parser.add_argument('--exit-when-window-missing-after', type=int, default=0, help='Salir tras N comprobaciones seguidas sin encontrar la ventana. 0 = no salir.')
 
     capture_parser = subparsers.add_parser('capture', help='Guarda una captura de la ventana de Claude y termina.')
     capture_parser.add_argument('--window-title', default='Claude', help='Texto que debe aparecer en el titulo de la ventana.')
@@ -57,6 +58,7 @@ def main() -> int:
         evidence_dir=Path(args.evidence_dir),
         mouse_idle_seconds=args.mouse_idle_seconds,
         dry_run=args.dry_run,
+        exit_when_window_missing_after=args.exit_when_window_missing_after,
     )
     run_monitor(config)
     return 0

@@ -64,6 +64,23 @@ O con watcher automatico estilo CodexBot:
 
 Ese watcher arranca ClaudeBot cuando detecta la ventana de Claude y lo detiene cuando Claude se cierra.
 
+## Look & Feel del terminal
+
+ClaudeBot sigue el mismo principio visual que `CodexBot`, pero con identidad propia:
+
+- consola visible y no oculta;
+- banner ASCII al arrancar;
+- ciclo de vida ligado a la ventana de Claude;
+- mensajes periodicos de chequeo para dejar claro que sigue vigilando;
+- colores inspirados en el logo de Claude, con tonos naranja y terracota.
+
+La intencion es que el usuario perciba de un vistazo:
+
+- que el bot esta vivo;
+- cada cuanto chequea;
+- cuando detecta una intervencion real;
+- cuando Claude desaparece y el bot se apaga.
+
 ## Uso macOS
 
 ```bash
